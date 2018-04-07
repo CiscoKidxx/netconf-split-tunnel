@@ -1,0 +1,19 @@
+{"message":"04-06-2018 17:35:00:[+][Parse CSV] - Opening routers.csv","level":"info"}
+{"message":"04-06-2018 17:35:00:[+][Parse CSV] - Found 2 hosts in routers.csv","level":"info"}
+{"message":"04-06-2018 17:35:00:[+][Status] - SSH into router 1 - (10.20.65.77).","level":"info"}
+{"message":"04-06-2018 17:35:00:[+][Next Hop] - Arping...","level":"info"}
+{"message":"04-06-2018 17:35:00:[+][Next Hop] - Found fe-0/0/6 next hop address: 192.169.50.2","level":"info"}
+{"message":"04-06-2018 17:35:00:[+][Static Routes] - Configuring static route towards 192.169.50.2.","level":"info"}
+{"message":"04-06-2018 17:35:00:[+][NAT] - Sending Config.","level":"info"}
+{"message":"04-06-2018 17:35:00:[+]    [Commit] - Success.","level":"info"}
+{"message":"04-06-2018 17:35:00:[+][Status] - Router 1 - 10.20.65.77 successful.","level":"info"}
+{"message":"04-06-2018 17:35:00:[+][Parse CSV] - Opening routers.csv","level":"info"}
+{"message":"04-06-2018 17:35:00:[+][Parse CSV] - Found 2 hosts in routers.csv","level":"info"}
+{"message":"04-06-2018 17:35:00:[+][Status] - SSH into router 2 - (10.20.65.77).","level":"info"}
+{"message":"04-06-2018 17:35:00:[+][Next Hop] - Arping...","level":"info"}
+{"message":"04-06-2018 17:35:00:[+][Next Hop] - Found fe-0/0/6 next hop address: 192.169.50.2","level":"info"}
+{"message":"04-06-2018 17:35:00:[+][Static Routes] - Configuring static route towards 192.169.50.2.","level":"info"}
+{"message":"04-06-2018 17:35:00:[+][NAT] - Sending Config.","level":"info"}
+{"message":"04-06-2018 17:35:00:[+]    [Commit] - Success.","level":"info"}
+{"message":"04-06-2018 17:35:00:[+][Status] - Router 2 - 10.20.65.77 successful.","level":"info"}
+{"message":"Completed 2 ofices. Done.","level":"info"}
