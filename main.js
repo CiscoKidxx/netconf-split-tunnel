@@ -58,20 +58,21 @@ function grabNextHopFromArp(router) {
 
         let arpArray = result.rpc_reply.arp_table_information.arp_table_entry;
 
-        if (!Array.isArray(arpArray)) {
-
-          arpArray = [{
-            interface_name: "fe-0/0/2.0",
-            ip_address: "7.7.7.7"
-          }, {
-            interface_name: "fe-0/0/5.0",
-            ip_address: "5.5.5.5"
-          }]
-
-        }
+        // If router only has one arp entry  (lab)
+        // if (!Array.isArray(arpArray)) {
+        //
+        //   arpArray = [{
+        //     interface_name: "fe-0/0/2.0",
+        //     ip_address: "7.7.7.7"
+        //   }, {
+        //     interface_name: "fe-0/0/5.0",
+        //     ip_address: "5.5.5.5"
+        //   }]
+        //
+        // }
 
         let match = arpArray.find(x => {
-          return x.interface_name === "fe-0/0/2.0";
+          return x.interface_name === "fe-0/0/6.0";
         })
 
         logger.info(`${timestamp}:[+][Next Hop] - Found fe-0/0/6 next hop address: ${match.ip_address}`)
@@ -97,8 +98,8 @@ function confStaticRoutes(router, next_hop) {
         replace: WAN {
             routing-options {
                 static {
-                    route 104.245.57.0/24 next-hop 8.8.8.8;
-                    route 199.255.120.128/25 next-hop 8.8.8.8;
+                    route 104.245.57.0/24 next-hop ${next_hop};
+                    route 199.255.120.128/25 next-hop ${next_hop};
                 }
             }
         }
