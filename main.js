@@ -1,19 +1,49 @@
 const netconf = require('netconf');
-const winston = require('winston');
+
+const {
+  createLogger,
+  format,
+  transports
+} = require('winston');
+
+const {
+  combine,
+  timestamp,
+  label,
+  printf
+} = format;
+
 const creds = require('./credentials');
 const moment = require('moment');
 const fs = require('fs');
 
-let timestamp = moment().format('MM-DD-YYYY HH:mm:ss');
+const myFormat = printf(info => {
+  return `${info.timestamp} - ${info.message}`;
+});
 
-const logger = winston.createLogger({
-  transports: [
-    new winston.transports.Console(),
-    new winston.transports.File({
-      filename: 'combined.log'
-    })
-  ]
-})
+const logger = createLogger({
+  level: 'info',
+  transports: new transports.Console({
+    format: format.combine(
+      format.timestamp({
+        format: 'MM/DD/YY HH:mm:SS'
+      }),
+      myFormat
+    )
+  })
+});
+
+
+// const logger = createLogger({
+//   format: combine(
+//     label({
+//       label: 'right meow!'
+//     }),
+//     timestamp(),
+//     myFormat
+//   ),
+//   transports: [new transports.Console()]
+// });
 
 
 let count = 0;
@@ -24,7 +54,7 @@ function openListOfRouters(path) {
 
   return new Promise((resolve, reject) => {
 
-    logger.info(`${timestamp}:[+][Parse CSV] - Opening routers.csv`);
+    logger.info(`[+][Parse CSV] - Opening routers.csv`);
     fs.readFile(path, 'utf8', function(err, data) {
       if (err) {
         logger.error(`[-][Parse CSV] - Cannot find/read routers.csv`)
@@ -38,7 +68,7 @@ function openListOfRouters(path) {
         }
         return newObj;
       }) //Be careful if you are in a \r\n world...
-      logger.info(`${timestamp}:[+][Parse CSV] - Found ${hostArray.length - 1} hosts in routers.csv`);
+      logger.info(`[+][Parse CSV] - Found ${hostArray.length - 1} hosts in routers.csv`);
       resolve(hostArray);
     })
 
@@ -48,7 +78,7 @@ function openListOfRouters(path) {
 
 function grabNextHopFromArp(router) {
 
-  logger.info(`${timestamp}:[+][Next Hop] - Arping...`)
+  logger.info(`[+][Next Hop] - Arping...`)
 
   return new Promise((resolve, reject) => {
 
@@ -75,7 +105,7 @@ function grabNextHopFromArp(router) {
           return x.interface_name === "fe-0/0/6.0";
         })
 
-        logger.info(`${timestamp}:[+][Next Hop] - Found fe-0/0/6 next hop address: ${match.ip_address}`)
+        logger.info(`[+][Next Hop] - Found fe-0/0/6 next hop address: ${match.ip_address}`)
 
         resolve(match.ip_address);
 
@@ -111,7 +141,7 @@ function confStaticRoutes(router, next_hop) {
       format: 'text'
     }
 
-    logger.info(`${timestamp}:[+][Static Routes] - Configuring static route towards ${next_hop}.`)
+    logger.info(`[+][Static Routes] - Configuring static route towards ${next_hop}.`)
 
     router.load(options, (err, reply) => {
 
@@ -161,7 +191,7 @@ function confNatEntries(router) {
 
       if (!err) {
 
-        logger.info(`${timestamp}:[+][NAT] - Sending Config.`)
+        logger.info(`[+][NAT] - Sending Config.`)
         resolve(reply);
 
       } else {
@@ -181,7 +211,7 @@ function commitChanges(router) {
     router.commit((err, reply) => {
 
       if (!err) {
-        logger.info(`${timestamp}:[+]    [Commit] - Success.`)
+        logger.info(`[+]    [Commit] - Success.`)
         resolve(reply);
       } else {
         reject(err)
@@ -207,7 +237,7 @@ function main(count) {
 
       router.open((err) => {
 
-        logger.info(`${timestamp}:[+][Status] - SSH into router ${count + 1} - (${routerArray[count].host}).`)
+        logger.info(`[+][Status] - SSH into router ${count + 1} - (${routerArray[count].host}).`)
 
         if (err) {
           logging.error(`Error logging into router - ${err}`)
@@ -222,7 +252,7 @@ function main(count) {
                   .then(z => {
                     commitChanges(router)
                       .then(y => {
-                        logger.info(`${timestamp}:[+][Status] - Router ${count + 1} - ${routerArray[count].host} successful.`);
+                        logger.info(`[+][Status] - Router ${count + 1} - ${routerArray[count].host} successful.`);
                         count++
                         if (count < routerArray.length - 1) {
                           main(count);
