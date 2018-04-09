@@ -155,7 +155,7 @@ function confNatEntries(router) {
                     to interface fe-0/0/6.0;
                     replace: rule 1 {
                         match {
-                            source-address 4.4.4.4/0;
+                            source-address 0.0.0.0/0;
                             destination-address [ 104.245.57.0/24 199.255.120.128/25 ];
                         }
                         then {

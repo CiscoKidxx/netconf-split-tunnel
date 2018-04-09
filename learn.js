@@ -1,56 +1,56 @@
 const ping = require('ping');
 const Netmask = require('netmask').Netmask
 
-let gateways = [];
+let count = 0;
+let aliveHosts = [];
+let promises = [];
 
-
+// Scan every .1 in the 10.50.0.1/24 - 10.54.255.1/24 range and report back which are alive.
 let getHosts = (network) => {
 
-  return new Promise((resolve, reject) => {
+  let block = new Netmask(network);
 
-    let block = new Netmask(network);
+  let host = block.first;
 
-    let gateway = block.first;
+  // Push all promises to an array to be resolved once all are synchronously fulfilled.
+  promises.push(ping.promise.probe(host))
 
-    gateways.push(gateway);
+  if (count < 5) {
+    count++;
 
-    if (!block.first.includes('.255.')) {
-      getHosts(block.next() + '/24')
-    }
+    // Recursivly execute with the next subnet's .1 address
+    getHosts(block.next() + '/24')
 
-    resolve(gateways);
+  } else {
 
-  })
+    // Resolve all promises and push hosts that responded to a new array.
+    Promise.all(promises)
+      .then(res => {
 
-}
+        res.forEach(host => {
 
-let isHostAlive = (hosts) => {
-
-  return new Promise(async (resolve, reject) => {
-
-    let aliveHosts = [];
-
-    for (let host of hosts) {
-
-      await ping.promise.probe(host, {
-          extra: ["-n 3"]
-        })
-        .then(res => {
-          if (res.alive) {
-            console.log(res);
-            aliveHosts.push(res.host);
+          if (host.alive) {
+            aliveHosts.push(host.host);
           }
-        })
-    }
 
-    resolve(aliveHosts);
-  })
+        })
+        // Call next function with new array of hosts.
+        queryRouterForDetails(aliveHosts);
+      })
+  }
 }
 
-getHosts('10.51.0.0/24')
-  .then(res => {
-    isHostAlive(res)
-  })
+// Query alive routers for hostname, fe-0/0/6 IP address and fe-0/0/6 next hop IP address.
+let queryRouterForDetails = (hostsArray) => {
+  console.log(hostsArray);
+
+  // Do things here...
+
+}
+
+getHosts('10.50.0.0/24')
+
+
 
 // isHostAlive()
 //   .then(aliveHosts => {
