@@ -26,27 +26,15 @@ const logger = createLogger({
   transports: new transports.Console({
     format: format.combine(
       format.timestamp({
-        format: 'MM/DD/YY HH:mm:SS'
+        format: 'MM/DD/YY HH:mm:ss'
       }),
       myFormat
     )
   })
 });
 
-
-// const logger = createLogger({
-//   format: combine(
-//     label({
-//       label: 'right meow!'
-//     }),
-//     timestamp(),
-//     myFormat
-//   ),
-//   transports: [new transports.Console()]
-// });
-
-
 let count = 0;
+let begin_script = moment().format("HH:mm:ss");
 
 // Functions for each action:
 
@@ -69,7 +57,7 @@ function openListOfRouters(path) {
         return newObj;
       }) //Be careful if you are in a \r\n world...
       logger.info(`[+][Parse CSV] - Found ${hostArray.length - 1} hosts in routers.csv`);
-      resolve(hostArray);
+      resolve(main(hostArray, count));
     })
 
   })
@@ -88,21 +76,21 @@ function grabNextHopFromArp(router) {
 
         let arpArray = result.rpc_reply.arp_table_information.arp_table_entry;
 
-        // If router only has one arp entry  (lab)
-        // if (!Array.isArray(arpArray)) {
-        //
-        //   arpArray = [{
-        //     interface_name: "fe-0/0/2.0",
-        //     ip_address: "7.7.7.7"
-        //   }, {
-        //     interface_name: "fe-0/0/5.0",
-        //     ip_address: "5.5.5.5"
-        //   }]
-        //
-        // }
+        // If router only has one arp entry(lab)
+        if (!Array.isArray(arpArray)) {
+
+          arpArray = [{
+            interface_name: "fe-0/0/2.0",
+            ip_address: "7.7.7.7"
+          }, {
+            interface_name: "fe-0/0/5.0",
+            ip_address: "5.5.5.5"
+          }]
+
+        }
 
         let match = arpArray.find(x => {
-          return x.interface_name === "fe-0/0/6.0";
+          return x.interface_name === "fe-0/0/2.0";
         })
 
         logger.info(`[+][Next Hop] - Found fe-0/0/6 next hop address: ${match.ip_address}`)
@@ -211,7 +199,7 @@ function commitChanges(router) {
     router.commit((err, reply) => {
 
       if (!err) {
-        logger.info(`[+]    [Commit] - Success.`)
+        logger.info(`[+][Commit] - Success.`)
         resolve(reply);
       } else {
         reject(err)
@@ -221,55 +209,56 @@ function commitChanges(router) {
   })
 }
 
-function main(count) {
+function main(hostArray, count) {
 
-  openListOfRouters('./routers.csv')
-    .then(hostArray => {
+  let begin_office = moment().format('HH:mm:ss');
 
-      let routerArray = hostArray
-        .filter(Boolean);
+  let routerArray = hostArray
+    .filter(Boolean);
 
-      const router = new netconf.Client({
-        host: `${routerArray[count].host}`,
-        username: creds.username,
-        password: creds.password
-      })
+  const router = new netconf.Client({
+    host: `${routerArray[count].host}`,
+    username: creds.username,
+    password: creds.password
+  })
 
-      router.open((err) => {
+  logger.info(`[+][Status] - Attempting to SSH into router ${count + 1} - (${routerArray[count].host}).`)
 
-        logger.info(`[+][Status] - SSH into router ${count + 1} - (${routerArray[count].host}).`)
+  router.open((err) => {
 
-        if (err) {
-          logging.error(`Error logging into router - ${err}`)
-          reject(err);
-        }
+    if (err) {
+      logging.error(`Error logging into router - ${err}`)
+      reject(err);
+    }
 
-        grabNextHopFromArp(router)
-          .then(next_hop => {
-            confStaticRoutes(router, next_hop)
-              .then(x => {
-                confNatEntries(router)
-                  .then(z => {
-                    commitChanges(router)
-                      .then(y => {
-                        logger.info(`[+][Status] - Router ${count + 1} - ${routerArray[count].host} successful.`);
-                        count++
-                        if (count < routerArray.length - 1) {
-                          main(count);
-                        } else {
-                          logger.info(`Completed ${count} ofices. Done.`)
-                        }
-                      })
+    grabNextHopFromArp(router)
+      .then(next_hop => {
+        confStaticRoutes(router, next_hop)
+          .then(x => {
+            confNatEntries(router)
+              .then(z => {
+                commitChanges(router)
+                  .then(y => {
+                    let office_done = moment().format('HH:mm:ss')
+                    let office_duration = moment.utc(moment(office_done, "HH:mm:ss").diff(moment(begin_office, "HH:mm:ss"))).format("ss")
+                    logger.info(`[+][Status] - Router ${count + 1} - ${routerArray[count].host} was successful. Completed in ${office_duration} seconds.`);
+                    count++
+                    if (count < routerArray.length - 1) {
+                      main(hostArray, count);
+                    } else {
+                      let script_done = moment().format('HH:mm:ss');
+                      let script_duration = moment.utc(moment(script_done, "HH:mm:ss").diff(moment(begin_script, "HH:mm:ss"))).format("HH:mm:ss")
+                      logger.info(`Completed ${count} routers. Done in ${script_duration}.`)
+                    }
                   })
               })
-
           })
 
-      });
+      })
 
-    })
+  });
+
 }
 
 // Begin execution
-
-main(count)
+openListOfRouters('./routers.csv')
